@@ -3,6 +3,7 @@ package whitaker.anthony.instaslam.activity;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -65,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         tabLayout.setupWithViewPager(mViewPager);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setImageDrawable(ContextCompat.getDrawable(getBaseContext(), R.drawable.new_post_button));
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
