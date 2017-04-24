@@ -22,12 +22,18 @@
                 android:src="@drawable/reshma"
                 app:layout_aspectRatio="100%"
                 app:layout_widthPercent="100%" />
+
         </android.support.percent.PercentRelativeLayout>
 
     </LinearLayout>
 
     <!-- This FrameLayout insets its children based on system windows using
          android:fitsSystemWindows. -->
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/content_images"
+        android:layout_width="match_parent"
+        android:layout_height="330dp" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"

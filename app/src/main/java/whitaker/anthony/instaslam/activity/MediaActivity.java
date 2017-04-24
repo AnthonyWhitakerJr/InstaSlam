@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -13,9 +14,13 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
 
 import java.util.ArrayList;
 
@@ -101,6 +106,7 @@ public class MediaActivity extends AppCompatActivity {
     private static final int PERMISSION_READ_EXTERNAL = 1337;
 
     private ArrayList<InstaImage> images = new ArrayList<>();
+    private ImageView selectedImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,6 +132,17 @@ public class MediaActivity extends AppCompatActivity {
         // while interacting with the UI.
         findViewById(R.id.dummy_button).setOnTouchListener(mDelayHideTouchListener);
 
+        selectedImage = (ImageView)findViewById(R.id.selected_image);
+
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.content_images);
+        ImageAdapter imageAdapter = new ImageAdapter(images);
+        recyclerView.setAdapter(imageAdapter);
+
+        GridLayoutManager layoutManager = new GridLayoutManager(getBaseContext(), 4);
+        layoutManager.setOrientation(GridLayoutManager.VERTICAL);
+        recyclerView.setLayoutManager(layoutManager);
+
+        // Request access to images in device storage.
         if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_READ_EXTERNAL);
         } else {
@@ -148,15 +165,28 @@ public class MediaActivity extends AppCompatActivity {
 
     public void updateImages() {
         images.clear();
-        try (Cursor cursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null, null, null)) {
-            if (cursor != null) {
-                while (cursor.moveToNext()) {
-                    Log.v("FISH", "URL: " + cursor.getString(1));
-                    InstaImage image = new InstaImage(Uri.parse(cursor.getString(1)));
-                    images.add(image);
+
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                try (Cursor cursor = getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null, null, null)) {
+                    if (cursor != null) {
+                        while (cursor.moveToNext()) {
+                            Log.v("FISH", "URL: " + cursor.getString(1));
+                            InstaImage image = new InstaImage(Uri.parse(cursor.getString(1)));
+                            images.add(image);
+                        }
+                    }
                 }
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Update UI
+                    }
+                });
             }
-        }
+        });
     }
 
     @Override
@@ -210,5 +240,55 @@ public class MediaActivity extends AppCompatActivity {
     private void delayedHide(int delayMillis) {
         mHideHandler.removeCallbacks(mHideRunnable);
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
+    }
+
+    public class ImageAdapter extends RecyclerView.Adapter<ImageViewHolder> {
+
+        private ArrayList<InstaImage> images;
+
+        public ImageAdapter(ArrayList<InstaImage> images) {
+            this.images = images;
+        }
+
+        @Override
+        public ImageViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return null;
+        }
+
+        @Override
+        public void onBindViewHolder(final ImageViewHolder holder, int position) {
+            final InstaImage image = images.get(position);
+            holder.updateUI(image);
+
+            holder.imageView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    selectedImage.setImageDrawable(holder.getImageView().getDrawable());
+                }
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return images.size();
+        }
+    }
+
+    public class ImageViewHolder extends RecyclerView.ViewHolder {
+
+        private ImageView imageView;
+
+        public ImageViewHolder(View itemView) {
+            super(itemView);
+            imageView = (ImageView)itemView.findViewById(R.id.image_thumb);
+        }
+
+        public void updateUI(InstaImage image) {
+
+        }
+
+        public ImageView getImageView() {
+            return imageView;
+        }
     }
 }
