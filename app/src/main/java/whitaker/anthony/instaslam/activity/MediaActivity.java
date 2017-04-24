@@ -25,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 import whitaker.anthony.instaslam.R;
@@ -245,6 +246,29 @@ public class MediaActivity extends AppCompatActivity {
         mHideHandler.postDelayed(mHideRunnable, delayMillis);
     }
 
+    public Bitmap decodeURI(String filePath) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(filePath, options);
+
+        // Only scale if we need to
+        // (16384 buffer for img processing)
+        Boolean scaleByHeight = Math.abs(options.outHeight - 100) >= Math.abs(options.outWidth - 100);
+        if(options.outHeight * options.outWidth * 2 >= 16384){
+            // Load, scaling to smallest power of 2 that'll get it <= desired dimensions
+            double sampleSize = scaleByHeight
+                    ? options.outHeight / 1000
+                    : options.outWidth / 1000;
+            options.inSampleSize =
+                    (int)Math.pow(2d, Math.floor(
+                            Math.log(sampleSize)/Math.log(2d)));
+        }
+
+        options.inJustDecodeBounds = false;
+        options.inTempStorage = new byte[512];
+        return BitmapFactory.decodeFile(filePath, options);
+    }
+
     public class ImageAdapter extends RecyclerView.Adapter<ImageViewHolder> {
 
         private ArrayList<InstaImage> images;
@@ -288,31 +312,36 @@ public class MediaActivity extends AppCompatActivity {
         }
 
         public void updateUI(InstaImage image) {
+            DecodeBitmap task = new DecodeBitmap(imageView, image);
+            task.execute();
+
             imageView.setImageBitmap(decodeURI(image.getImageResourceUri().getPath()));
         }
 
-        public Bitmap decodeURI(String filePath) {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(filePath, options);
 
-            // Only scale if we need to
-            // (16384 buffer for img processing)
-            Boolean scaleByHeight = Math.abs(options.outHeight - 100) >= Math.abs(options.outWidth - 100);
-            if(options.outHeight * options.outWidth * 2 >= 16384){
-                // Load, scaling to smallest power of 2 that'll get it <= desired dimensions
-                double sampleSize = scaleByHeight
-                        ? options.outHeight / 1000
-                        : options.outWidth / 1000;
-                options.inSampleSize =
-                        (int)Math.pow(2d, Math.floor(
-                                Math.log(sampleSize)/Math.log(2d)));
-            }
+    }
 
-            options.inJustDecodeBounds = false;
-            options.inTempStorage = new byte[512];
-            return BitmapFactory.decodeFile(filePath, options);
+    class DecodeBitmap extends AsyncTask<Void, Void, Bitmap> {
+        private final WeakReference<ImageView> imageViewWeakReference;
+        private InstaImage image;
+
+        public DecodeBitmap(ImageView imageView, InstaImage image) {
+            this.imageViewWeakReference = new WeakReference<ImageView>(imageView);
+            this.image = image;
         }
 
+        @Override
+        protected Bitmap doInBackground(Void... params) {
+            return decodeURI(image.getImageResourceUri().getPath());
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            super.onPostExecute(bitmap);
+            final ImageView imageView = imageViewWeakReference.get();
+            if (imageView != null) {
+                imageView.setImageBitmap(bitmap);
+            }
+        }
     }
 }
