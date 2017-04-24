@@ -4,6 +4,8 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.provider.MediaStore;
@@ -17,6 +19,7 @@ import android.os.Handler;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -252,7 +255,8 @@ public class MediaActivity extends AppCompatActivity {
 
         @Override
         public ImageViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            return null;
+            View card = LayoutInflater.from(parent.getContext()).inflate(R.layout.card_image, parent, false);
+            return new ImageViewHolder(card);
         }
 
         @Override
@@ -263,7 +267,7 @@ public class MediaActivity extends AppCompatActivity {
             holder.imageView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    selectedImage.setImageDrawable(holder.getImageView().getDrawable());
+                    selectedImage.setImageDrawable(holder.imageView.getDrawable());
                 }
             });
         }
@@ -284,11 +288,31 @@ public class MediaActivity extends AppCompatActivity {
         }
 
         public void updateUI(InstaImage image) {
-
+            imageView.setImageBitmap(decodeURI(image.getImageResourceUri().getPath()));
         }
 
-        public ImageView getImageView() {
-            return imageView;
+        public Bitmap decodeURI(String filePath) {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(filePath, options);
+
+            // Only scale if we need to
+            // (16384 buffer for img processing)
+            Boolean scaleByHeight = Math.abs(options.outHeight - 100) >= Math.abs(options.outWidth - 100);
+            if(options.outHeight * options.outWidth * 2 >= 16384){
+                // Load, scaling to smallest power of 2 that'll get it <= desired dimensions
+                double sampleSize = scaleByHeight
+                        ? options.outHeight / 1000
+                        : options.outWidth / 1000;
+                options.inSampleSize =
+                        (int)Math.pow(2d, Math.floor(
+                                Math.log(sampleSize)/Math.log(2d)));
+            }
+
+            options.inJustDecodeBounds = false;
+            options.inTempStorage = new byte[512];
+            return BitmapFactory.decodeFile(filePath, options);
         }
+
     }
 }
