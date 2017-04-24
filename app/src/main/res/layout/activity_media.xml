@@ -9,7 +9,8 @@
     <LinearLayout
         android:id="@+id/fullscreen_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
         <android.support.percent.PercentRelativeLayout
             android:layout_width="match_parent"
@@ -25,15 +26,15 @@
 
         </android.support.percent.PercentRelativeLayout>
 
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/content_images"
+            android:layout_width="match_parent"
+            android:layout_height="330dp" />
+
     </LinearLayout>
 
     <!-- This FrameLayout insets its children based on system windows using
          android:fitsSystemWindows. -->
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/content_images"
-        android:layout_width="match_parent"
-        android:layout_height="330dp" />
-
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
